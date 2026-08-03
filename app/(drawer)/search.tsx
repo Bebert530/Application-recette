@@ -51,9 +51,10 @@ export default function SearchScreen() {
   }, []);
 
   const filtered = query.trim()
-    ? recipes?.filter((r) =>
-        r.title.toLowerCase().includes(query.toLowerCase())
-      )
+    ? recipes?.filter((r) => {
+        const needle = query.toLowerCase();
+        return r.title.toLowerCase().includes(needle) || r.ingredients.toLowerCase().includes(needle);
+      })
     : recipes;
 
   const openDrawer = () => {
