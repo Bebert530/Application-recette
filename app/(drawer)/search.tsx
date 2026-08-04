@@ -22,10 +22,11 @@ interface Recipe {
   id: string;
   title: string;
   ingredients: string;
-  prep_time: string;
-  recipe_text: string;
-  image_url: string | null;
-  created_at: string;
+  ingredientIds?: string;
+  prepTime: string;
+  recipeText: string;
+  imageUrl: string | null;
+  createdAt: string;
 }
 
 export default function SearchScreen() {
@@ -37,7 +38,7 @@ export default function SearchScreen() {
     queryKey: ['recipes'],
     queryFn: async () => {
       return await blink.db.table<Recipe>('recipes').list({
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
       });
     },
   });
@@ -62,10 +63,9 @@ export default function SearchScreen() {
     global.__drawerOpen?.();
   };
 
-  const formatIngredients = (ingredients: string) => {
-    const items = ingredients.split(',').map(i => i.trim());
-    if (items.length <= 3) return items.join(', ');
-    return items.slice(0, 3).join(', ') + ` +${items.length - 3}`;
+  const formatIngredients = (value: string) => {
+    const items = (value || '').split(',').map((item) => item.trim()).filter(Boolean);
+    return items.length <= 3 ? items.join(', ') : `${items.slice(0, 3).join(', ')} +${items.length - 3}`;
   };
 
   return (
@@ -157,9 +157,9 @@ export default function SearchScreen() {
                     <XStack>
                       {/* Thumbnail */}
                       <View width={100} height={100} backgroundColor="$color3">
-                        {recipe.image_url ? (
+                        {recipe.imageUrl ? (
                           <Image
-                            source={{ uri: recipe.image_url }}
+                            source={{ uri: recipe.imageUrl }}
                             style={{ width: 100, height: 100 }}
                             resizeMode="cover"
                           />
@@ -179,7 +179,7 @@ export default function SearchScreen() {
                           <XStack gap="$2" alignItems="center">
                             <Clock size={12} color="#E07B3C" />
                             <SizableText size="$2" color="#E07B3C" fontWeight="500">
-                              {recipe.prep_time}
+                              {recipe.prepTime}
                             </SizableText>
                           </XStack>
                           <SizableText size="$2" color="$color9" numberOfLines={1}>

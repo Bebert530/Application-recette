@@ -26,10 +26,11 @@ interface Recipe {
   id: string;
   title: string;
   ingredients: string;
-  prep_time: string;
-  recipe_text: string;
-  image_url: string | null;
-  created_at: string;
+  ingredientIds?: string;
+  prepTime: string;
+  recipeText: string;
+  imageUrl: string | null;
+  createdAt: string;
 }
 
 export default function HomeScreen() {
@@ -39,20 +40,11 @@ export default function HomeScreen() {
 
   const { data: recipes, isLoading, refetch } = useQuery({
     queryKey: ['recipes'],
-    queryFn: async () => {
-      const result = await blink.db.table<Recipe>('recipes').list({
-        orderBy: { created_at: 'desc' },
-      });
-      return result;
-    },
+    queryFn: async () => await blink.db.table<Recipe>('recipes').list({ orderBy: { createdAt: 'desc' } }),
   });
 
   useEffect(() => {
-    RNAnimated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
+    RNAnimated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -66,11 +58,7 @@ export default function HomeScreen() {
     global.__drawerOpen?.();
   };
 
-  const formatIngredients = (ingredients: string) => {
-    const items = ingredients.split(',').map(i => i.trim());
-    if (items.length <= 3) return items.join(', ');
-    return items.slice(0, 3).join(', ') + ` +${items.length - 3}`;
-  };
+  const labelItems = (value: string) => (value || '').split(',').map((item) => item.trim()).filter(Boolean);
 
   return (
     <View flex={1} backgroundColor="$color1">
@@ -141,9 +129,9 @@ export default function HomeScreen() {
                   >
                     {/* Image */}
                     <View height={180} backgroundColor="$color3" overflow="hidden">
-                      {recipe.image_url ? (
+                      {recipe.imageUrl ? (
                         <Image
-                          source={{ uri: recipe.image_url }}
+                          source={{ uri: recipe.imageUrl }}
                           style={{ width: '100%', height: '100%' }}
                           resizeMode="cover"
                         />
@@ -185,28 +173,22 @@ export default function HomeScreen() {
                           >
                             <Clock size={14} color="#E07B3C" />
                             <SizableText size="$2" color="#E07B3C" fontWeight="600">
-                              {recipe.prep_time}
+                              {recipe.prepTime}
                             </SizableText>
                           </XStack>
-                          <XStack
-                            backgroundColor="$color3"
-                            paddingHorizontal="$3"
-                            paddingVertical="$1"
-                            borderRadius="$2"
-                            alignItems="center"
-                            gap="$2"
-                            flex={1}
-                          >
-                            <ChefHat size={14} color="$color9" />
-                            <SizableText
+                          {labelItems(recipe.ingredients).map((ingredient, i) => (
+                            <Badge
+                              key={i}
                               size="$2"
                               color="$color10"
-                              numberOfLines={1}
-                              flex={1}
+                              backgroundColor="$color3"
+                              paddingHorizontal="$3"
+                              paddingVertical="$1"
+                              borderRadius="$2"
                             >
-                              {formatIngredients(recipe.ingredients)}
-                            </SizableText>
-                          </XStack>
+                              {ingredient}
+                            </Badge>
+                          ))}
                         </XStack>
                       </YStack>
                     </Card.Footer>

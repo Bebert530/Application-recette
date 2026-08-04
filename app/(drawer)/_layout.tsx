@@ -36,9 +36,9 @@ export default function DrawerLayout() {
     }, 300);
   }, [closeDrawer, router]);
 
-  const isHome = pathname === '/(drawer)' || pathname === '/';
-  const isSearch = pathname.includes('/search');
-  const isIngredients = pathname.includes('/ingredients');
+  const isHome = pathname === '/(drawer)' || pathname === '/' || pathname === '';
+  const isSearch = pathname.includes('search');
+  const isIngredients = pathname.includes('ingredients');
 
   return (
     <View flex={1} backgroundColor="$color1">
