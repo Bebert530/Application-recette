@@ -1,155 +1,49 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  YStack,
-  XStack,
-  View,
-  Card,
-  H3,
-  H4,
-  SizableText,
-  ScrollView,
-  Input,
-  Button,
-  Spinner,
-  Paragraph,
-} from '@blinkdotnew/mobile-ui';
-import { Menu, Plus, Pencil, Trash2, X, Check, ShoppingBasket } from '@blinkdotnew/mobile-ui';
+import { YStack, XStack, View, H3, H4, SizableText, ScrollView, Input, Button, Spinner } from '@blinkdotnew/mobile-ui';
+import { Menu, Pencil, Trash2, X, Check, ShoppingBasket } from '@blinkdotnew/mobile-ui';
 import { TouchableOpacity, Platform, Animated as RNAnimated } from 'react-native';
 import { blink } from '@/lib/blink';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-interface Ingredient {
-  id: string;
-  name: string;
-  price: number | string;
-}
+interface Ingredient { id: string; name: string; price: number | string; lidlPrice: number | string; dinoPrice: number | string; mercaPrice: number | string }
+interface Prices { lidlPrice: string; dinoPrice: string; mercaPrice: string }
 
 export default function IngredientsScreen() {
   const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
+  const [prices, setPrices] = useState<Prices>({ lidlPrice: '', dinoPrice: '', mercaPrice: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const fadeAnim = useRef(new RNAnimated.Value(0)).current;
   const queryClient = useQueryClient();
+  const { data: ingredients, isLoading } = useQuery({ queryKey: ['ingredients'], queryFn: () => blink.db.table<Ingredient>('ingredients').list({ orderBy: { name: 'asc' } }) });
 
-  const { data: ingredients, isLoading } = useQuery({
-    queryKey: ['ingredients'],
-    queryFn: () => blink.db.table<Ingredient>('ingredients').list({ orderBy: { name: 'asc' } }),
-  });
-
-  useEffect(() => {
-    RNAnimated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
-  }, []);
-
+  useEffect(() => { RNAnimated.timing(fadeAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start(); }, []);
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const parsedPrice = Number(price.replace(',', '.'));
       if (!name.trim()) throw new Error('Le nom est requis');
-      if (Number.isNaN(parsedPrice) || parsedPrice < 0) throw new Error('Prix invalide');
-      if (editingId) {
-        return blink.db.table<Ingredient>('ingredients').update(editingId, {
-          name: name.trim(),
-          price: parsedPrice,
-        });
-      }
-      return blink.db.table<Ingredient>('ingredients').create({
-        name: name.trim(),
-        price: parsedPrice,
-      });
+      const values = Object.fromEntries(Object.entries(prices).map(([key, value]) => [key, Number(value.replace(',', '.')) || 0]));
+      if (Object.values(values).some((value) => value < 0)) throw new Error('Les prix doivent être positifs');
+      const table = blink.db.table<Ingredient>('ingredients');
+      return editingId ? table.update(editingId, { name: name.trim(), ...values }) : table.create({ name: name.trim(), ...values });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-      setName('');
-      setPrice('');
-      setEditingId(null);
-      setError('');
-    },
-    onError: (e: Error) => setError(e.message),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['ingredients'] }); resetForm(); },
+    onError: (e: Error) => setError(e.message || 'Erreur lors de l’enregistrement'),
   });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => blink.db.table<Ingredient>('ingredients').delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ingredients'] }),
-    onError: (e: Error) => setError(e.message),
-  });
-
-  const openDrawer = () => {
-    // @ts-ignore
+  const deleteMutation = useMutation({ mutationFn: (id: string) => blink.db.table<Ingredient>('ingredients').delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ingredients'] }), onError: (e: Error) => setError(e.message) });
+  const resetForm = () => { setEditingId(null); setName(''); setPrices({ lidlPrice: '', dinoPrice: '', mercaPrice: '' }); setError(''); };
+  const beginEdit = (item: Ingredient) => { setEditingId(item.id); setName(item.name); setPrices({ lidlPrice: String(item.lidlPrice ?? ''), dinoPrice: String(item.dinoPrice ?? ''), mercaPrice: String(item.mercaPrice ?? '') }); setError(''); };
+  const openDrawer = () => { // @ts-ignore
     global.__drawerOpen?.();
   };
+  const priceCell = (value: number | string) => Number(value) > 0 ? `${Number(value).toFixed(2)} €` : '—';
 
-  const beginEdit = (ingredient: Ingredient) => {
-    setEditingId(ingredient.id);
-    setName(ingredient.name);
-    setPrice(String(ingredient.price));
-    setError('');
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setName('');
-    setPrice('');
-    setError('');
-  };
-
-  return (
-    <View flex={1} backgroundColor="$color1">
-      <XStack paddingHorizontal="$4" paddingTop={Platform.OS === 'ios' ? 56 : 16} paddingBottom="$3" alignItems="center" gap="$3">
-        <TouchableOpacity onPress={openDrawer} activeOpacity={0.7}>
-          <Menu size={24} color="#E07B3C" />
-        </TouchableOpacity>
-        <YStack>
-          <H3 color="$color12" fontWeight="700">Ingrédients</H3>
-          <SizableText size="$2" color="$color9">Votre liste et vos prix</SizableText>
-        </YStack>
-      </XStack>
-
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        <YStack gap="$4" marginTop="$2">
-          <Card backgroundColor="$color2" bordered borderRadius="$5" padding="$4">
-            <YStack gap="$3">
-              <XStack alignItems="center" gap="$2">
-                <ShoppingBasket size={18} color="#E07B3C" />
-                <H4 color="$color12">{editingId ? 'Modifier l’ingrédient' : 'Ajouter un ingrédient'}</H4>
-              </XStack>
-              <Input value={name} onChangeText={setName} placeholder="Nom de l’ingrédient" placeholderTextColor="$color9" backgroundColor="$color3" borderColor="$color4" outlineStyle="none" />
-              <XStack gap="$3" alignItems="center">
-                <Input flex={1} value={price} onChangeText={setPrice} placeholder="Prix (€)" placeholderTextColor="$color9" keyboardType="decimal-pad" backgroundColor="$color3" borderColor="$color4" outlineStyle="none" />
-                <Button height={48} backgroundColor="#E07B3C" onPress={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                  {saveMutation.isPending ? <Spinner size="small" color="white" /> : <Check size={20} color="white" />}
-                </Button>
-                {editingId && <Button height={48} chromeless onPress={cancelEdit}><X size={20} color="$color9" /></Button>}
-              </XStack>
-              {error && <SizableText size="$2" color="$red10">{error}</SizableText>}
-            </YStack>
-          </Card>
-
-          {isLoading ? <YStack alignItems="center" paddingVertical="$8"><Spinner size="large" color="#E07B3C" /></YStack> : (
-            <RNAnimated.View style={{ opacity: fadeAnim }}>
-              <YStack gap="$3">
-                {ingredients?.map((ingredient) => (
-                  <Card key={ingredient.id} backgroundColor="$color2" bordered borderRadius="$4" padding="$4">
-                    <XStack alignItems="center" justifyContent="space-between" gap="$3">
-                      <YStack flex={1} gap="$1">
-                        <SizableText size="$4" color="$color12" fontWeight="600">{ingredient.name}</SizableText>
-                        <SizableText size="$3" color="#E07B3C" fontWeight="700">{Number(ingredient.price).toFixed(2)} €</SizableText>
-                      </YStack>
-                      <XStack gap="$2">
-                        <TouchableOpacity onPress={() => beginEdit(ingredient)} activeOpacity={0.7}>
-                          <View width={44} height={44} borderRadius="$3" backgroundColor="#E07B3C18" alignItems="center" justifyContent="center"><Pencil size={18} color="#E07B3C" /></View>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => deleteMutation.mutate(ingredient.id)} activeOpacity={0.7}>
-                          <View width={44} height={44} borderRadius="$3" backgroundColor="#EF444418" alignItems="center" justifyContent="center"><Trash2 size={18} color="$red10" /></View>
-                        </TouchableOpacity>
-                      </XStack>
-                    </XStack>
-                  </Card>
-                ))}
-              </YStack>
-            </RNAnimated.View>
-          )}
-        </YStack>
-      </ScrollView>
-    </View>
-  );
+  return <View flex={1} backgroundColor="$color1">
+    <XStack paddingHorizontal="$4" paddingTop={Platform.OS === 'ios' ? 56 : 16} paddingBottom="$3" alignItems="center" gap="$3"><TouchableOpacity onPress={openDrawer} activeOpacity={0.7}><Menu size={24} color="#E07B3C" /></TouchableOpacity><YStack><H3 color="$color12" fontWeight="700">Ingrédients</H3><SizableText size="$2" color="$color9">Prix par enseigne</SizableText></YStack></XStack>
+    <ScrollView contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 40 }} horizontal={false} showsVerticalScrollIndicator={false}>
+      <YStack gap="$4" marginTop="$2">
+        <YStack gap="$2"><H4 color="$color12">{editingId ? 'Modifier un ingrédient' : 'Ajouter un ingrédient'}</H4><XStack gap="$2" alignItems="center"><Input flex={1.35} value={name} onChangeText={setName} placeholder="Ingrédient" placeholderTextColor="$color9" backgroundColor="$color2" borderColor="$color4" outlineStyle="none" /><Input flex={1} value={prices.lidlPrice} onChangeText={(value) => setPrices((p) => ({ ...p, lidlPrice: value }))} placeholder="Lidl" placeholderTextColor="$color9" keyboardType="decimal-pad" backgroundColor="$color2" borderColor="$color4" outlineStyle="none" /><Input flex={1} value={prices.dinoPrice} onChangeText={(value) => setPrices((p) => ({ ...p, dinoPrice: value }))} placeholder="Dino" placeholderTextColor="$color9" keyboardType="decimal-pad" backgroundColor="$color2" borderColor="$color4" outlineStyle="none" /><Input flex={1} value={prices.mercaPrice} onChangeText={(value) => setPrices((p) => ({ ...p, mercaPrice: value }))} placeholder="Merca" placeholderTextColor="$color9" keyboardType="decimal-pad" backgroundColor="$color2" borderColor="$color4" outlineStyle="none" /><Button height={48} backgroundColor="#E07B3C" onPress={() => saveMutation.mutate()} disabled={saveMutation.isPending}>{saveMutation.isPending ? <Spinner size="small" color="white" /> : <Check size={19} color="white" />}</Button>{editingId && <Button height={48} chromeless onPress={resetForm}><X size={19} color="$color9" /></Button>}</XStack>{error && <SizableText size="$2" color="$red10">{error}</SizableText>}</YStack>
+        <View borderWidth={1} borderColor="$color4" borderRadius="$4" overflow="hidden" backgroundColor="$color2"><XStack backgroundColor="$color3" minHeight={48} alignItems="center" paddingHorizontal="$2"><SizableText width="34%" size="$2" fontWeight="700" color="$color11">Ingrédient</SizableText><SizableText width="18%" size="$2" fontWeight="700" color="#6B8ECA">Lidl</SizableText><SizableText width="18%" size="$2" fontWeight="700" color="#D46A6A">Dino</SizableText><SizableText width="18%" size="$2" fontWeight="700" color="#E07B3C">Merca</SizableText><View width="12%" /></XStack>{isLoading ? <YStack padding="$6" alignItems="center"><Spinner color="#E07B3C" /></YStack> : <RNAnimated.View style={{ opacity: fadeAnim }}>{ingredients?.map((item) => <XStack key={item.id} minHeight={58} alignItems="center" paddingHorizontal="$2" borderTopWidth={1} borderColor="$color4"><SizableText width="34%" size="$3" color="$color12" numberOfLines={2}>{item.name}</SizableText><SizableText width="18%" size="$3" color="$color11">{priceCell(item.lidlPrice)}</SizableText><SizableText width="18%" size="$3" color="$color11">{priceCell(item.dinoPrice)}</SizableText><SizableText width="18%" size="$3" color="$color11">{priceCell(item.mercaPrice)}</SizableText><XStack width="12%" gap="$1"><TouchableOpacity onPress={() => beginEdit(item)} activeOpacity={0.7}><Pencil size={16} color="#E07B3C" /></TouchableOpacity><TouchableOpacity onPress={() => deleteMutation.mutate(item.id)} activeOpacity={0.7}><Trash2 size={16} color="$red10" /></TouchableOpacity></XStack></XStack>)}</RNAnimated.View>}</View>
+      </YStack>
+    </ScrollView>
+  </View>;
 }

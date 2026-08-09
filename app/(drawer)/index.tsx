@@ -177,17 +177,19 @@ export default function HomeScreen() {
                             </SizableText>
                           </XStack>
                           {labelItems(recipe.ingredients).map((ingredient, i) => (
-                            <Badge
+                            <XStack
                               key={i}
-                              size="$2"
-                              color="$color10"
                               backgroundColor="$color3"
                               paddingHorizontal="$3"
                               paddingVertical="$1"
                               borderRadius="$2"
+                              alignItems="center"
+                              gap="$2"
                             >
-                              {ingredient}
-                            </Badge>
+                              <SizableText size="$2" color="$color10">
+                                {ingredient}
+                              </SizableText>
+                            </XStack>
                           ))}
                         </XStack>
                       </YStack>

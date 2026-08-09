@@ -1,5 +1,5 @@
 import { YStack, XStack, View, Button, SizableText, Separator } from '@blinkdotnew/mobile-ui';
-import { Home, Search, X, ChefHat, Utensils, ShoppingBasket } from '@blinkdotnew/mobile-ui';
+import { Home, Search, X, ChefHat, Utensils, ShoppingBasket, ShoppingCart } from '@blinkdotnew/mobile-ui';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Platform, TouchableOpacity, Animated as RNAnimated, StyleSheet } from 'react-native';
 import { Slot, useRouter, usePathname } from 'expo-router';
@@ -39,6 +39,7 @@ export default function DrawerLayout() {
   const isHome = pathname === '/(drawer)' || pathname === '/' || pathname === '';
   const isSearch = pathname.includes('search');
   const isIngredients = pathname.includes('ingredients');
+  const isShoppingList = pathname.includes('shopping-list');
 
   return (
     <View flex={1} backgroundColor="$color1">
@@ -60,6 +61,7 @@ export default function DrawerLayout() {
             <NavItem icon={<Home size={22} color={isHome ? '#E07B3C' : '#9A7B6B'} />} label="Home" active={isHome} onPress={() => navigateTo('/(drawer)')} />
             <NavItem icon={<Search size={22} color={isSearch ? '#E07B3C' : '#9A7B6B'} />} label="Recherche" active={isSearch} onPress={() => navigateTo('/(drawer)/search')} />
             <NavItem icon={<ShoppingBasket size={22} color={isIngredients ? '#E07B3C' : '#9A7B6B'} />} label="Ingrédients" active={isIngredients} onPress={() => navigateTo('/(drawer)/ingredients')} />
+            <NavItem icon={<ShoppingCart size={22} color={isShoppingList ? '#E07B3C' : '#9A7B6B'} />} label="Liste de course" active={isShoppingList} onPress={() => navigateTo('/(drawer)/shopping-list')} />
           </YStack>
           <YStack flex={1} justifyContent="flex-end" paddingHorizontal="$5" paddingBottom="$6"><XStack alignItems="center" gap="$2" opacity={0.4}><Utensils size={14} color="#9A7B6B" /><SizableText size="$2" color="#9A7B6B">Cuisine Vault v1.0</SizableText></XStack></YStack>
         </YStack>
