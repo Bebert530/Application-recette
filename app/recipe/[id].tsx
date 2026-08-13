@@ -6,7 +6,7 @@ import { TouchableOpacity, Image, Platform, Animated as RNAnimated } from 'react
 import { blink } from '@/lib/blink';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-interface Recipe { id: string; title: string; ingredients: string; ingredientIds?: string; prepTime: string; recipeText: string; imageUrl: string | null }
+interface Recipe { id: string; title: string; ingredients: string; ingredientIds?: string; prepTime: string; recipeText: string; imageUrl: string | null; apports?: string }
 interface Ingredient { id: string; name: string; price: number | string }
 
 export default function RecipeDetailScreen() {
@@ -37,6 +37,7 @@ export default function RecipeDetailScreen() {
       <Separator borderColor="$color4" />
       <YStack gap="$3"><XStack alignItems="center" gap="$2"><ChefHat size={20} color="#E07B3C" /><H4 color="$color12" fontWeight="700">Ingrédients</H4></XStack><Card backgroundColor="$color2" bordered borderRadius="$4" padding="$4"><YStack gap="$2">{displayIngredients.map((item, index) => <XStack key={`${item}-${index}`} alignItems="center" gap="$3"><View width={6} height={6} borderRadius={3} backgroundColor="#E07B3C" /><SizableText size="$3" color="$color11">{item}</SizableText></XStack>)}</YStack></Card></YStack>
       <YStack gap="$3"><XStack alignItems="center" gap="$2"><Utensils size={20} color="#E07B3C" /><H4 color="$color12" fontWeight="700">Préparation</H4></XStack><Card backgroundColor="$color2" bordered borderRadius="$4" padding="$4"><YStack gap="$4">{steps.length ? steps.map((step, index) => <XStack key={index} gap="$3"><View width={28} height={28} borderRadius={14} backgroundColor="#E07B3C" alignItems="center" justifyContent="center"><SizableText size="$2" fontWeight="700" color="white">{index + 1}</SizableText></View><SizableText size="$3" color="$color11" flex={1} lineHeight={22}>{step}</SizableText></XStack>) : <SizableText size="$3" color="$color11">{recipe.recipeText}</SizableText>}</YStack></Card></YStack>
+      <YStack gap="$3"><XStack alignItems="center" gap="$2"><Pencil size={20} color="#E07B3C" /><H4 color="$color12" fontWeight="700">Apports</H4></XStack><XStack flexWrap="wrap" gap="$2">{(recipe.apports || '').split(',').map((item) => item.trim()).filter(Boolean).map((item) => <XStack key={item} backgroundColor="#E07B3C18" borderRadius={18} paddingHorizontal="$3" paddingVertical="$2"><SizableText size="$2" color="#E07B3C">{item}</SizableText></XStack>)}</XStack></YStack>
       <YStack paddingVertical="$6" alignItems="center"><Button chromeless onPress={handleDelete} disabled={deleting}>{deleting ? <Spinner size="small" /> : <SizableText size="$3" color="$red10">Supprimer la recette</SizableText>}</Button></YStack>
     </YStack></RNAnimated.View>
   </ScrollView></View>;
